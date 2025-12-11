@@ -11,7 +11,7 @@ data:
   gem_powerplants_file: "data/raw/Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx"
 
 filters:
-  country: "Thailand"
+  country: "Vietnam"
 
   # Keywords used to identify gas units (GEM uses varied labels)
   fuel_keywords:

@@ -30,12 +30,7 @@ def load_raw_gem_data() -> pd.DataFrame:
 
 
     df = _read_gem_file(path)
-    breakpoint()
     return df
-
-
-if __name__ == "__main__":
-    df = load_raw_gem_data()
 
 
 
