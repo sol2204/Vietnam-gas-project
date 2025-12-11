@@ -1,0 +1,52 @@
+# ================================
+# Project configuration file
+# Gas Plant Mapping & Analysis
+# ================================
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+
+  # GEM dataset (update extension if CSV instead of XLSX)
+  gem_powerplants_file: "data/raw/Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx"
+
+filters:
+  country: "Thailand"
+
+  # Keywords used to identify gas units (GEM uses varied labels)
+  fuel_keywords:
+    - "Gas"
+    - "Natural Gas"
+    - "CCGT"
+    - "Combined Cycle"
+
+columns:
+  id: "GEM location ID"
+  unit_id: "GEM unit ID"
+  plant_name: "Plant name"
+  plant_name_local: "Plant Name in Local Language / Script"
+  unit_name: "Unit name"
+
+  fuel: "Fuel"
+  fuel_class: "Fuel classification?"
+  capacity_mw: "Capacity (MW)"
+  status: "Status"
+  technology: "Turbine/Engine Technology"
+
+  lat: "Latitude"
+  lon: "Longitude"
+  city: "City"
+  province: "State/Province"
+  region: "Region"
+
+  start_year: "Start year"
+  retired_year: "Retired year"
+  planned_retire: "Planned retire"
+
+  owner: "Owner(s)"
+  operator: "Operator(s)"
+
+output:
+  cleaned_file: "data/processed/vietnam_gas_plants.csv"
+  figures_dir: "figures"
+
