@@ -13,6 +13,9 @@ data:
   #Population density data
   WP_population_density_file: "data/raw/vnm_pd_2020_1km_UNadj_ASCII_XYZ.csv"  
 
+  #Population data in tiff format
+  WP_population_tiff_file: "data/raw/vnm_ppp_2020.tif"
+
 filters:
   country: "Vietnam"
 

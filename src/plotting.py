@@ -4,7 +4,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-from scipy.interpolate import griddata
+
+try:
+    import rasterio
+    RASTERIO_AVAILABLE = True
+except ImportError:
+    RASTERIO_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("rasterio not available. TIFF file reading will not work.")
 
 from src.clean_data import clean_gas_plant_data
 from src.read_data import load_population_density_data, load_raw_gem_data 
@@ -14,88 +21,94 @@ from .config import load_config
 logger = logging.getLogger(__name__)
 
 
-def plot_plants_and_pop_density(df_plants: pd.DataFrame, df_pop: pd.DataFrame) -> None:
+def plot_plants_and_pop_density(df_plants: pd.DataFrame, df_pop: pd.DataFrame = None) -> None:
     """
-    Plot gas plants and population density data.
+    Plot gas plants and population density data from TIFF file.
     
     Args:
         df_plants: DataFrame with gas plant data containing 'lat' and 'lon' columns
-        df_pop: DataFrame with population density data containing 'x', 'y' (coordinates) 
-                and 'z' (People per km²) columns
+        df_pop: Optional DataFrame (deprecated - TIFF file is used instead)
     """
     try:
         logger.info("Starting plot generation: plants_and_pop_density")
-        logger.info(f"df_plants shape: {df_plants.shape}, df_pop shape: {df_pop.shape}")
+        logger.info(f"df_plants shape: {df_plants.shape}")
+        
+        if not RASTERIO_AVAILABLE:
+            raise ImportError("rasterio is required to read TIFF files. Install it with: pip install rasterio")
         
         cfg = load_config()
         figures_dir = Path(cfg["paths"]["figures"])
         figures_dir.mkdir(parents=True, exist_ok=True)
         
-        # Validate required columns
+        # Validate required columns for plants
         required_plant_cols = ["lat", "lon"]
-        required_pop_cols = ["X", "Y", "Z"]
-        
         missing_plant_cols = [col for col in required_plant_cols if col not in df_plants.columns]
-        missing_pop_cols = [col for col in required_pop_cols if col not in df_pop.columns]
         
         if missing_plant_cols:
             raise ValueError(f"Missing required columns in df_plants: {missing_plant_cols}")
-        if missing_pop_cols:
-            raise ValueError(f"Missing required columns in df_pop: {missing_pop_cols}")
         
         # Filter out any NaN values
         df_plants_clean = df_plants.dropna(subset=["lat", "lon"]).copy()
-        df_pop_clean = df_pop.dropna(subset=["X", "Y", "Z"]).copy()
         
-        logger.info(f"After cleaning - plants: {len(df_plants_clean)}, pop: {len(df_pop_clean)}")
+        logger.info(f"After cleaning - plants: {len(df_plants_clean)}")
         
         if len(df_plants_clean) == 0:
             raise ValueError("No valid gas plant coordinates found")
-        if len(df_pop_clean) == 0:
-            raise ValueError("No valid population density data found")
+        
+        # Load TIFF file
+        tiff_path = cfg["paths"]["population_tiff_file"]
+        if not tiff_path.exists():
+            raise FileNotFoundError(f"Population density TIFF file not found at: {tiff_path}")
+        
+        logger.info(f"Loading population density TIFF from: {tiff_path}")
+        
+        # Read TIFF file
+        with rasterio.open(tiff_path) as src:
+            # Read the raster data (first band)
+            pop_data = src.read(1)
+            
+            # Get geographic bounds
+            bounds = src.bounds
+            transform = src.transform
+            crs = src.crs
+            
+            logger.info(f"TIFF bounds: {bounds}")
+            logger.info(f"TIFF CRS: {crs}")
+            logger.info(f"TIFF shape: {pop_data.shape}")
+            logger.info(f"TIFF data range: {np.nanmin(pop_data)} to {np.nanmax(pop_data)}")
         
         # Create figure
         fig, ax = plt.subplots(figsize=(12, 10))
         
         # Prepare population density data for visualization
-        # Create a grid for interpolation
-        x_min, x_max = df_pop_clean["X"].min(), df_pop_clean["X"].max()
-        y_min, y_max = df_pop_clean["Y"].min(), df_pop_clean["Y"].max()
+        # Get extent in lat/lon coordinates
+        x_min, y_min = bounds.left, bounds.bottom
+        x_max, y_max = bounds.right, bounds.top
         
-        # Create grid for contour/heatmap
-        grid_resolution = 200
-        xi = np.linspace(x_min, x_max, grid_resolution)
-        yi = np.linspace(y_min, y_max, grid_resolution)
-        xi_grid, yi_grid = np.meshgrid(xi, yi)
+        # Mask no-data values (typically 0 or negative values)
+        pop_data_masked = np.ma.masked_where(pop_data <= 0, pop_data)
         
-        # Interpolate population density onto grid
-        z_grid = griddata(
-            (df_pop_clean["X"], df_pop_clean["Y"]),
-            df_pop_clean["Z"],
-            (xi_grid, yi_grid),
-            method="linear",
-            fill_value=0
-        )
-        
-        # Plot population density as filled contour/heatmap
-        # Use log scale for better visualization of density variations
-        z_positive = z_grid[z_grid > 0]
-        if len(z_positive) > 0:
-            vmin = max(z_positive.min(), 1)  # Avoid log(0)
-            vmax = z_positive.max()
-            im = ax.contourf(
-                xi_grid, yi_grid, z_grid,
-                levels=50,
+        # Plot population density as image
+        pop_positive = pop_data[pop_data > 0]
+        if len(pop_positive) > 0:
+            vmin = max(pop_positive.min(), 1)  # Avoid log(0)
+            vmax = pop_positive.max()
+            
+            im = ax.imshow(
+                pop_data_masked,
+                extent=[x_min, x_max, y_min, y_max],
                 cmap="YlOrRd",
                 norm=LogNorm(vmin=vmin, vmax=vmax),
-                alpha=0.7
+                alpha=0.7,
+                origin="upper",
+                interpolation="bilinear"
             )
             
             # Add colorbar
             cbar = plt.colorbar(im, ax=ax)
             cbar.set_label("Population Density (People per km²)", rotation=270, labelpad=20)
         else:
-            logger.warning("No positive population density values found for visualization")
+            logger.warning("No positive population density values found in TIFF file")
         
         # Plot gas plants as markers
         ax.scatter(
@@ -150,14 +163,9 @@ if __name__ == "__main__":
         df_plants = clean_gas_plant_data(df_raw)
         logger.info(f"Cleaned data: {len(df_plants)} gas plant units")
         
-        # Load population density data
-        logger.info("Loading population density data...")
-        df_pop = load_population_density_data()
-        logger.info(f"Loaded {len(df_pop)} rows of population density data")
-        
-        # Generate the plot
+        # Generate the plot (TIFF file is loaded inside the function)
         logger.info("Generating plot...")
-        plot_plants_and_pop_density(df_plants, df_pop)
+        plot_plants_and_pop_density(df_plants)
         
         logger.info("Plot generation completed successfully!")
         print(f"\n✓ Plot saved to: figures/plants_and_pop_density.png")
