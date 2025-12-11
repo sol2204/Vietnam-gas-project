@@ -11,7 +11,7 @@ data:
   gem_powerplants_file: "data/raw/Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx"
 
   #Population density data
-  WP_population_density_file: "vnm_pd_2020_1km_UNadj_ASCII_XYZ.csv"  
+  WP_population_density_file: "data/raw/vnm_pd_2020_1km_UNadj_ASCII_XYZ.csv"  
 
 filters:
   country: "Vietnam"

@@ -31,6 +31,7 @@ def load_config(path: Path = PROJECT_ROOT / "config" / "config.yaml") -> dict:
         "gem_file": PROJECT_ROOT / cfg["data"]["gem_powerplants_file"],
         "cleaned_output": PROJECT_ROOT / cfg["output"]["cleaned_file"],
         "figures": PROJECT_ROOT / cfg["output"]["figures_dir"],
+        "population_density_file": PROJECT_ROOT / cfg["data"]["WP_population_density_file"]
     }
 
     # Ensure data directories exist (optional but safe)

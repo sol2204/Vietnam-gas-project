@@ -33,6 +33,33 @@ def load_raw_gem_data() -> pd.DataFrame:
     return df
 
 
+def _read_population_density_file(path: Path) -> pd.DataFrame:
+    """Read population density file into a pandas DataFrame."""
+    
+    suffix = path.suffix
+    if suffix in [".csv"]:
+        return pd.read_csv(path)
+    else:
+        raise ValueError(f"Unsupported file format for population density file: {suffix}")
+
+
+def load_population_density_data() -> pd.DataFrame:
+    """Load population density data from file."""
+    cfg = load_config()
+    path = cfg["paths"]["population_density_file"]
+    if not path.exists():
+        raise FileNotFoundError(f"Population density file not found at: {path}")
+    df = _read_population_density_file(path)
+    breakpoint()
+    return df
+
+
+if __name__ == "__main__":
+    df = load_population_density_data()
+
+
+
+
 
 
 
