@@ -24,7 +24,6 @@ def clean_gas_plant_data(df: pd.DataFrame) -> pd.DataFrame:
     country_col = "Country/Area"
     target_country = cfg["filters"]["country"]
     df = df[df[country_col] == target_country]
-    breakpoint()
 
     # ---------------------------------------------------------
     # 1. Select only columns defined in config.yaml
@@ -114,18 +113,18 @@ def clean_gas_plant_data(df: pd.DataFrame) -> pd.DataFrame:
     # 6. Drop duplicates (GEM sometimes repeats units)
     # ---------------------------------------------------------
     df_clean = df_clean.drop_duplicates(subset=["id", "unit_id"]).reset_index(drop=True)
-    breakpoint()
 
     return df_clean
 
 
 
-if __name__ == "__main__":
-    # Quick test: run via `python -m src.clean_data`
-    from src.read_data import load_raw_gem_data
+# if __name__ == "__main__":
+#     # Quick test: run via `python -m src.clean_data`
+#     from src.read_data import load_raw_gem_data
 
-    df_raw = load_raw_gem_data()
-    df_clean = clean_gas_plant_data(df_raw)
+#     df_raw = load_raw_gem_data()
+#     df_clean = clean_gas_plant_data(df_raw)
+#     breakpoint()
 
-    print(df_clean.head())
-    print(f"\nRows after cleaning: {len(df_clean)}")
+#     print(df_clean.head())
+#     print(f"\nRows after cleaning: {len(df_clean)}")
