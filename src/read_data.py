@@ -54,8 +54,8 @@ def load_population_density_data() -> pd.DataFrame:
     return df
 
 
-if __name__ == "__main__":
-    df = load_population_density_data()
+# if __name__ == "__main__":
+#     df = load_population_density_data()
 
 
 
